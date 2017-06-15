@@ -41,6 +41,7 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <getopt.h>
+#include <garudamsgclient.c>
 
 /* Typical include path would be <librdkafka/rdkafka.h>, but this program
  * is builtin from within the librdkafka source tree and thus differs. */
@@ -52,6 +53,7 @@ static rd_kafka_t *rk;
 static int exit_eof = 0;
 static int wait_eof = 0;  /* number of partitions awaiting EOF */
 static int quiet = 0;
+Config *config;
 static 	enum {
 	OUTPUT_HEXDUMP,
 	OUTPUT_RAW,
@@ -159,8 +161,19 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 
 	if (rkmessage->key_len) {
                   char *ret;
-                  ret = strstr((char *)rkmessage->payload,"192.168.1.100");
-                  if(ret) interface_event_action("192.168.1.100","eno2");
+		  Actiondata * actiondata=parseCollectdMessage(config,message);
+		  if (actiondata!=NULL){
+			  switch(actiondata.action){
+				  case "add_vip":
+					  printf("adding vip");
+					  break;
+				  case "del_vip":
+					  printf("deleting VIP");
+					  break;
+			  }
+		  }
+                 // ret = strstr((char *)rkmessage->payload,"192.168.1.100");
+                  //if(ret) interface_event_action("192.168.1.100","eno2");
 
 		if (output == OUTPUT_HEXDUMP)
 			hexdump(stdout, "Message Key",
@@ -280,6 +293,8 @@ static void sig_usr1 (int sig) {
 }
 
 int main (int argc, char **argv) {
+	//get  monitioring configurations
+	config =getConfig();
         char mode = 'C';
 	char *brokers = "localhost:9092";
 	int opt;
