@@ -153,21 +153,19 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 		return;
 	}
 
-	if (!quiet)
-		fprintf(stdout, "%% Message (topic %s [%"PRId32"], "
+//	if (!quiet)
+	/*	fprintf(stdout, "%% Message (topic %s [%"PRId32"], "
                         "offset %"PRId64", %zd bytes):\n",
                         rd_kafka_topic_name(rkmessage->rkt),
                         rkmessage->partition,
-			rkmessage->offset, rkmessage->len);
+			rkmessage->offset, rkmessage->len);*/
 
 	if (rkmessage->key_len) {
                   char *ret;
                   ret = strstr((char *)rkmessage->payload,"eno2");
-                  printf("before rt");
-                  printf("payload%s\n",(char *)rkmessage->payload);
-                  printf("config%s\n",config->entities[0].category);
                   if(ret){
-                  printf("Coming here\n");
+                  printf("%.*s\n",
+                       (int)rkmessage->len, (char *)rkmessage->payload);
                   char message[4000]; 
                    
                   sprintf(message,"%s",(char *)rkmessage->payload);
@@ -182,7 +180,7 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
                                        interface_event_action(actiondata->resource_value,actiondata->resource_name,1);
                                   }else{
                                         printf("deleting VIP");
-                                        interface_event_action(actiondata->resource_value,actiondata->resource_name,1);
+                                        interface_event_action(actiondata->resource_value,actiondata->resource_name,0);
                                   }  
 		  }
                    free(actiondata);
@@ -194,17 +192,17 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 		if (output == OUTPUT_HEXDUMP)
 			hexdump(stdout, "Message Key",
 				rkmessage->key, rkmessage->key_len);
-		else
-			printf("Key: %.*s\n",
-			       (int)rkmessage->key_len, (char *)rkmessage->key);
+		//else
+		//	printf("Key: %.*s\n",
+		//	       (int)rkmessage->key_len, (char *)rkmessage->key);
 	}
 
 	if (output == OUTPUT_HEXDUMP)
 		hexdump(stdout, "Message Payload",
 			rkmessage->payload, rkmessage->len);
-	else
-		printf("%.*s\n",
-		       (int)rkmessage->len, (char *)rkmessage->payload);
+//	else
+//		printf("%.*s\n",
+//		       (int)rkmessage->len, (char *)rkmessage->payload);
 }
 
 

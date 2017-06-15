@@ -6,12 +6,12 @@ definitions:
       - entity:
           category: RESOURCE
           type: host
-          name: nfvha-comp-04.oot.lab.eng.bos.redhat.com
+          name: nfvha-comp-03.oot.lab.eng.bos.redhat.com
           id: host1
       - entity:
           category: RESOURCE
           type: host
-          name: nfvha-comp-03.oot.lab.eng.bos.redhat.com
+          name: nfvha-comp-04.oot.lab.eng.bos.redhat.com
           id: host2
       - entity:
           category: RESOURCE
