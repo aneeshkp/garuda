@@ -6,7 +6,7 @@ definitions:
       - entity:
           category: RESOURCE
           type: host
-          name: aputtur.fedora23
+          name: nfvha-comp-04.oot.lab.eng.bos.redhat.com
           id: host1
       - entity:
           category: RESOURCE

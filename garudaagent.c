@@ -41,7 +41,8 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <getopt.h>
-#include <garudamsgclient.c>
+#include "netlink-ip.c"
+#include "garudamsgclient.c"
 
 /* Typical include path would be <librdkafka/rdkafka.h>, but this program
  * is builtin from within the librdkafka source tree and thus differs. */
@@ -161,17 +162,21 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 
 	if (rkmessage->key_len) {
                   char *ret;
-		  Actiondata * actiondata=parseCollectdMessage(config,message);
+                  ret = strstr((char *)rkmessage->payload,"eno2");
+                  if(ret){
+		  Actiondata * actiondata=parseCollectdMessage(config,(char *)rkmessage->payload);
 		  if (actiondata!=NULL){
-			  switch(actiondata.action){
-				  case "add_vip":
-					  printf("adding vip");
-					  break;
-				  case "del_vip":
-					  printf("deleting VIP");
-					  break;
-			  }
+				  if(!strcmp(actiondata->action, "add_vip")){
+                                       printf("adding vip");
+                                       interface_event_action(actiondata->resource_value,actiondata->resource_name,1);
+                                  }else{
+                                        printf("deleting VIP");
+                                        interface_event_action(actiondata->resource_value,actiondata->resource_name,1);
+                                  }  
 		  }
+                   free(actiondata);
+                  }
+
                  // ret = strstr((char *)rkmessage->payload,"192.168.1.100");
                   //if(ret) interface_event_action("192.168.1.100","eno2");
 
@@ -467,7 +472,9 @@ int main (int argc, char **argv) {
 			rd_kafka_version_str(), rd_kafka_version(),
                         group, brokers,
 			RD_KAFKA_DEBUG_CONTEXTS);
+                free(config);  
 		exit(1);
+                 
 	}
 
 
@@ -479,6 +486,7 @@ int main (int argc, char **argv) {
 	    RD_KAFKA_CONF_OK) {
 		fprintf(stderr, "%% Debug configuration failed: %s: %s\n",
 			errstr, debug);
+                free(config); 
 		exit(1);
 	}
 

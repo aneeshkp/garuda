@@ -25,7 +25,7 @@ Actiondata *  parseCollectdMessage(Config * config,char * jsonMessage);
 
 
 
-int main(){
+/*int main(){
 	Config *config =getConfig();
 	unsigned char message[65536]="{\"values\":[1],\"dstypes\":[\"gauge\"],\"dsnames\":[\"value\"],\"time\":1497538754.422, \
 \"interval\":0.005,\"host\":\"nfvha-comp-04.oot.lab.eng.bos.redhat.com\",\"plugin\":\"connectivity\",\"/plugin_instance\":\"\", \
@@ -41,7 +41,7 @@ int main(){
 
 	free(config);
 	free(actiondata);
-}
+}*/
 
 // main config function
 Config * getConfig(){

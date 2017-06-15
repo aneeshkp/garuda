@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 #include <ifaddrs.h>
 #include <net/if.h>
-
+#include<time.h>
 /*include <iostream.h>*/
 
 /*using namespace std;*/
@@ -264,7 +264,7 @@ int add_IP_Address(char * IP, struct rtnl_handle * rth, struct my_interface * if
 	 req.n.nlmsg_type = RTM_DELADDR;
 	 req.n.nlmsg_flags = NLM_F_REQUEST;
      //}else if(iface->vip_status==0 && iface->status==1){ // if no vip then add
-      else {	     
+      }else {	     
          printf("Adding vip %s for index %d\n",IP,iface->index);
          req.n.nlmsg_type = RTM_NEWADDR;
          req.n.nlmsg_flags = NLM_F_CREATE | NLM_F_EXCL | NLM_F_REQUEST;
