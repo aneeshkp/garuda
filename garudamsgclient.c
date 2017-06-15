@@ -40,6 +40,7 @@ int main(){
 
 
 	free(config);
+	free(actiondata);
 }
 
 // main config function
