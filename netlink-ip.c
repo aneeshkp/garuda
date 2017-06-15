@@ -242,7 +242,7 @@ int get_prefix(inet_prefix *dst, char *arg, int family)
 }
 
 
-int add_IP_Address(char * IP, struct rtnl_handle * rth, struct my_interface * iface)
+int add_IP_Address(char * IP, struct rtnl_handle * rth, struct my_interface * iface,int action)
 {
 
     inet_prefix lcl;
@@ -258,11 +258,13 @@ int add_IP_Address(char * IP, struct rtnl_handle * rth, struct my_interface * if
     printf("adding/deleting ipaddress\n");
     printf("Status %d\t vip status %d\n",iface->status,iface->vip_status); 
     // if interface status is down and it has vip delete it
-    if(iface->status==0 && iface->vip_status==1){
+    //if(iface->status==0 && iface->vip_status==1){
+     if(action==0){
          printf("Deleteing interface\n");
 	 req.n.nlmsg_type = RTM_DELADDR;
 	 req.n.nlmsg_flags = NLM_F_REQUEST;
-     }else if(iface->vip_status==0 && iface->status==1){ // if no vip then add
+     //}else if(iface->vip_status==0 && iface->status==1){ // if no vip then add
+      else {	     
          printf("Adding vip %s for index %d\n",IP,iface->index);
          req.n.nlmsg_type = RTM_NEWADDR;
          req.n.nlmsg_flags = NLM_F_CREATE | NLM_F_EXCL | NLM_F_REQUEST;
@@ -314,7 +316,7 @@ void  get_interface_index(struct my_interface *iface){
 
 }
 
-void interface_event_action(char * ipaddr, char * iname){
+void interface_event_action(char * ipaddr, char * iname,int action){
     struct my_interface iface; 
     iface.name=iname;
     iface.ipaddr=ipaddr;
@@ -322,7 +324,7 @@ void interface_event_action(char * ipaddr, char * iname){
     printf("Interface: %s\tAddress: %s index %d\n", iface.name, iface.ipaddr, iface.index);
     struct rtnl_handle rth;
     netlink_open(&rth);
-    add_IP_Address(ipaddr,&rth,&iface);
+    add_IP_Address(ipaddr,&rth,&iface,action);
 
 }
 /*int main(int argc, char **argv)
