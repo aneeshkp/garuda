@@ -1,0 +1,81 @@
+meta_data:
+    name: vip_interface_at_host1
+    description: When vip goes down delete and configure
+definitions:
+  entities:
+      - entity:
+          category: RESOURCE
+          type: host
+          name: aputtur.fedora23
+          id: host1
+      - entity:
+          category: RESOURCE
+          type: host
+          name: nfvha-comp-03.oot.lab.eng.bos.redhat.com
+          id: host2
+      - entity:
+          category: RESOURCE
+          type: interface
+          name: eno2
+          id: vip_interface      
+  relationships:
+      - relationship: 
+          source: vip_interface
+          relationship_type: down
+          id: interface_down
+      - relationship: 
+          source: vip_interface
+          relationship_type: up
+          id: interface_up
+      - relationship: 
+          source: host1
+          relationship_type: containes
+          id: host1_contains_interface     
+rules:
+  - rule:
+    condition: interface_up 
+    actions: 
+      - action:
+          action_type: add_vip
+          resource_id: vip_interface
+          resource_value: 192.168.1.100
+          target: host1
+      - action:
+          action_type: delete_vip
+          resource_id: vip_interface
+          resource_value: 192.168.1.100
+          target: host2
+  - rule: 
+    condition: interface_down
+    actions: 
+      - action:
+          action_type: delete_vip
+          resource_id: vip_interface
+          resource_value: 192.168.1.100
+          target: host1          
+      - action:
+          action_type: add_vip
+          resource_id: vip_interface
+          resource_value: 192.168.1.100
+          target: host2
+
+messages:
+    - message:
+        condition: interface_down
+        source: host1
+        target: host2
+        resource: vip_interface
+    - message:
+        condition: interface_up
+        source: host1
+        target: host2
+        resource: vip_interface
+
+
+
+
+
+
+
+
+  
