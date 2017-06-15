@@ -57,6 +57,7 @@ Actiondata *  parseCollectdMessage(Config * config,char * jsonMessage){
 	char errbuf[1024];
 
 	yajl_val node;
+        printf("\nJSON MESSAGE%s\n",jsonMessage);
 	/* we have the whole config file in memory.  let's parse it ... */
 
 

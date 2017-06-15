@@ -163,8 +163,19 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 	if (rkmessage->key_len) {
                   char *ret;
                   ret = strstr((char *)rkmessage->payload,"eno2");
+                  printf("before rt");
+                  printf("payload%s\n",(char *)rkmessage->payload);
+                  printf("config%s\n",config->entities[0].category);
                   if(ret){
-		  Actiondata * actiondata=parseCollectdMessage(config,(char *)rkmessage->payload);
+                  printf("Coming here\n");
+                  char message[4000]; 
+                   
+                  sprintf(message,"%s",(char *)rkmessage->payload);
+                  char *p=message;
+                  p[strlen(p)-1]=0;
+                  p++;
+                  printf("\nFINAL STRING%s\n" ,p);
+		  Actiondata * actiondata=parseCollectdMessage(config,p);
 		  if (actiondata!=NULL){
 				  if(!strcmp(actiondata->action, "add_vip")){
                                        printf("adding vip");
@@ -472,7 +483,6 @@ int main (int argc, char **argv) {
 			rd_kafka_version_str(), rd_kafka_version(),
                         group, brokers,
 			RD_KAFKA_DEBUG_CONTEXTS);
-                free(config);  
 		exit(1);
                  
 	}
@@ -486,7 +496,6 @@ int main (int argc, char **argv) {
 	    RD_KAFKA_CONF_OK) {
 		fprintf(stderr, "%% Debug configuration failed: %s: %s\n",
 			errstr, debug);
-                free(config); 
 		exit(1);
 	}
 
