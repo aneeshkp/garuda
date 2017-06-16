@@ -41,9 +41,9 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <getopt.h>
+#include <time.h>
 #include "netlink-ip.c"
 #include "garudamsgclient.c"
-
 /* Typical include path would be <librdkafka/rdkafka.h>, but this program
  * is builtin from within the librdkafka source tree and thus differs. */
 #include "rdkafka.h"  /* for Kafka driver */
@@ -153,58 +153,73 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 		return;
 	}
 
-	if (!quiet)
-		fprintf(stdout, "%% Message (topic %s [%"PRId32"], "
+	//      if (!quiet)
+        /*      fprintf(stdout, "%% Message (topic %s [%"PRId32"], "
                         "offset %"PRId64", %zd bytes):\n",
                         rd_kafka_topic_name(rkmessage->rkt),
                         rkmessage->partition,
-			rkmessage->offset, rkmessage->len);
+                        rkmessage->offset, rkmessage->len);*/
 
-	if (rkmessage->key_len) {
+        if (rkmessage->key_len) {
                   char *ret;
                   ret = strstr((char *)rkmessage->payload,"eno2");
-                  printf("before rt");
-                  printf("payload%s\n",(char *)rkmessage->payload);
-                  printf("config%s\n",config->entities[0].category);
                   if(ret){
-                  printf("Coming here\n");
-                  char message[4000]; 
-                   
-                  sprintf(message,"%s",(char *)rkmessage->payload);
+                  printf("%.*s\n",
+                       (int)rkmessage->len, (char *)rkmessage->payload);
+                  char * message;
+
+                  snprintf(message, (int)rkmessage->len,(char *)rkmessage->payload);
+                  printf("MESSAGE REC%s\n",message);
                   char *p=message;
-                  p[strlen(p)-1]=0;
+                  p[(int)rkmessage->len-1]=0;
                   p++;
                   printf("\nFINAL STRING%s\n" ,p);
-		  Actiondata * actiondata=parseCollectdMessage(config,p);
-		  if (actiondata!=NULL){
-				  if(!strcmp(actiondata->action, "add_vip")){
+                  Actiondata * actiondata=parseCollectdMessage(config,p);
+
+                  if (actiondata!=NULL){
+                    struct timeval tv;
+                    gettimeofday(&tv, NULL);
+                    unsigned long long millisecondsSinceEpoch =  (unsigned long long)(tv.tv_sec) * 1000 +  (unsigned long long)(tv.tv_usec) / 1000;
+                    printf("Current Time :%llu\n" , millisecondsSinceEpoch);
+                    char *ptr;
+//                   printf("Before clock %s\n" ,actiondata->clock);
+                    unsigned long long lclock=strtoull((char *)actiondata->clock,&ptr,10);
+                    printf("Event Occured time : %llu\n",lclock);
+                     printf("\nTotal time  : %llu\n",millisecondsSinceEpoch-lclock);
+
+  
+
+                   
+                                   printf("ACTION DATA->%s\n",actiondata->action);
+                                  if(!strcmp(actiondata->action, "add_vip")){
                                        printf("adding vip");
                                        interface_event_action(actiondata->resource_value,actiondata->resource_name,1);
                                   }else{
                                         printf("deleting VIP");
-                                        interface_event_action(actiondata->resource_value,actiondata->resource_name,1);
-                                  }  
-		  }
+                                        interface_event_action(actiondata->resource_value,actiondata->resource_name,0);
+                                  }
+                  }
                    free(actiondata);
                   }
 
                  // ret = strstr((char *)rkmessage->payload,"192.168.1.100");
                   //if(ret) interface_event_action("192.168.1.100","eno2");
 
-		if (output == OUTPUT_HEXDUMP)
-			hexdump(stdout, "Message Key",
-				rkmessage->key, rkmessage->key_len);
-		else
-			printf("Key: %.*s\n",
-			       (int)rkmessage->key_len, (char *)rkmessage->key);
-	}
+                if (output == OUTPUT_HEXDUMP)
+                        hexdump(stdout, "Message Key",
+                                rkmessage->key, rkmessage->key_len);
+                //else
+                //      printf("Key: %.*s\n",
+                //             (int)rkmessage->key_len, (char *)rkmessage->key);
+
+        }
 
 	if (output == OUTPUT_HEXDUMP)
 		hexdump(stdout, "Message Payload",
 			rkmessage->payload, rkmessage->len);
-	else
-		printf("%.*s\n",
-		       (int)rkmessage->len, (char *)rkmessage->payload);
+//	else
+//		printf("%.*s\n",
+//		       (int)rkmessage->len, (char *)rkmessage->payload);
 }
 
 

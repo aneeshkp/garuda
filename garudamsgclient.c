@@ -10,6 +10,8 @@ typedef struct{
 	char *condition;
 	char *entity;
 	char *source;
+        char *dest;
+        char *clock;
 }GarudaMessage;
 
 
@@ -17,6 +19,7 @@ typedef struct{
 	char *action;
 	char *resource_name;
 	char *resource_value;
+        char *clock;
 }Actiondata;
 
 // methods
@@ -73,33 +76,68 @@ Actiondata *  parseCollectdMessage(Config * config,char * jsonMessage){
 	     message->entity= YAJL_GET_STRING(yajl_tree_get(node, path2, yajl_t_string));
 	     const char * path3[] = { "meta", "source" ,(const char *) 0 };
 	     message->source= YAJL_GET_STRING(yajl_tree_get(node, path3, yajl_t_string));
-		}else{
+             const char * path4[] = { "meta", "dest" ,(const char *) 0 };
+             message->dest= YAJL_GET_STRING(yajl_tree_get(node, path4, yajl_t_string));
+             const char * path5[] = { "meta", "clock" ,(const char *) 0 };
+             message->clock=YAJL_GET_STRING(yajl_tree_get(node, path5, yajl_t_string));
+	}else{
 			printf("Message node is null");
 			return 0;
 
 		}
-	/*printf("Message:Condition%s\n",message->condition);
+        printf("Message:Condition%s\n",message->condition);
 	printf("Message:Entity%s\n",message->entity);
-	printf("Message:Source%s\n",message->source);*/
+	printf("Message:Source%s\n",message->source);
+       printf("Message:dest%s\n",message->dest);
+          printf("Message:dest%s\n",message->clock);
+
+
 
 
 
 	//printConfig(config);
 	//printf("CONDITION sending %s\n",(char *)message->condition);
-	const char * returnValue =getJsonString((char *)message->condition,config);
+        char hostname[1024];
+        hostname[1023] = '\0';
+        gethostname(hostname, 1023);
+        const char * returnValue;
+        printf("HOSTNAME%s\n",hostname);
+        
+        if(!strcmp(hostname,message->source)){
+                printf("SAME HOSTNAE");  
+                returnValue =getJsonString((char *)message->condition,config);
+                printf("%s/n",returnValue);
+        }else{  
+                  returnValue =getJsonString((char *)message->dest,config);
+                  printf("DIFFERENT");
+                  printf("%s\n",returnValue);
+
+         }
+
+   
+
+  //	const char * returnValue =getJsonString((char *)message->condition,config);
 	//printf("JSON STRING***:%s\n",returnValue);
 	//{"aputtur.fedora23":{"action":"add_vip","resource_name":"eno2","resource_value":"192.168.1.100"},"nfvha-comp-03.oot.lab.eng.bos.redhat.com":{"action":"delete_vip","resource_name":"eno2","resource_value":"192.168.1.100"}}
-	char hostname[1024];
-	gethostname(hostname, sizeof(hostname));
 	//printf("hostname:%s\n",hostname);
 	node = yajl_tree_parse((const char *) returnValue, errbuf, sizeof(errbuf));
 	Actiondata *actiondata;
 	actiondata=(Actiondata *)malloc(sizeof(Actiondata));
-	
+	actiondata->clock=strdup(message->clock);
 
 	if(node!=NULL){
-		  const char * action_path[] = { hostname, "action" ,(const char *) 0 };
-		  actiondata->action=strdup(YAJL_GET_STRING(yajl_tree_get(node, action_path, yajl_t_string)));
+                                    
+                /*  if(!strcmp(hostname,message->source)){ //if hostname and message source is same
+                      const char * action_path[] = { hostname, "action" ,(const char *) 0 };
+                       actiondata->action=strdup(YAJL_GET_STRING(yajl_tree_get(node, action_path, yajl_t_string)));
+                  }else{
+                      const char * action_path[] = {message->source , "action" ,(const char *) 0 };
+                      actiondata->action=strdup(YAJL_GET_STRING(yajl_tree_get(node, action_path, yajl_t_string)));
+                  }*/
+                  const char * action_path[] = {hostname , "action" ,(const char *) 0 };
+                   actiondata->action=strdup(YAJL_GET_STRING(yajl_tree_get(node, action_path, yajl_t_string)));
+
+
 		  const char * resource_name_path[] = { hostname, "resource_name" ,(const char *) 0 };
 		  actiondata->resource_name=strdup(YAJL_GET_STRING(yajl_tree_get(node, resource_name_path, yajl_t_string)));
 		  const char * resource_value_path[] = { hostname, "resource_value" ,(const char *) 0 };

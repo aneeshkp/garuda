@@ -259,16 +259,18 @@ int add_IP_Address(char * IP, struct rtnl_handle * rth, struct my_interface * if
     printf("Status %d\t vip status %d\n",iface->status,iface->vip_status); 
     // if interface status is down and it has vip delete it
     //if(iface->status==0 && iface->vip_status==1){
+    printf("ACTION %d\n",action);
      if(action==0){
          printf("Deleteing interface\n");
-	 req.n.nlmsg_type = RTM_DELADDR;
-	 req.n.nlmsg_flags = NLM_F_REQUEST;
-     //}else if(iface->vip_status==0 && iface->status==1){ // if no vip then add
-      }else {	     
+         req.n.nlmsg_type = RTM_DELADDR;
+         req.n.nlmsg_flags = NLM_F_REQUEST;
+      }else {
+          printf("ELSEACTION %d\n",action);
          printf("Adding vip %s for index %d\n",IP,iface->index);
          req.n.nlmsg_type = RTM_NEWADDR;
          req.n.nlmsg_flags = NLM_F_CREATE | NLM_F_EXCL | NLM_F_REQUEST;
        }
+
     req.ifa.ifa_flags = IFA_F_SECONDARY;
     req.ifa.ifa_scope = RT_SCOPE_HOST;
     req.ifa.ifa_family = AF_INET ;
