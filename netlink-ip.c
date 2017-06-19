@@ -255,18 +255,18 @@ int add_IP_Address(char * IP, struct rtnl_handle * rth, struct my_interface * if
 
     memset(&req, 0, sizeof(req));
     req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
-    printf("adding/deleting ipaddress\n");
-    printf("Status %d\t vip status %d\n",iface->status,iface->vip_status); 
+    //printf("adding/deleting ipaddress\n");
+    //printf("Status %d\t vip status %d\n",iface->status,iface->vip_status); 
     // if interface status is down and it has vip delete it
     //if(iface->status==0 && iface->vip_status==1){
-    printf("ACTION %d\n",action);
+    //printf("ACTION %d\n",action);
      if(action==0){
-         printf("Deleteing interface\n");
+         //printf("Deleteing interface\n");
          req.n.nlmsg_type = RTM_DELADDR;
          req.n.nlmsg_flags = NLM_F_REQUEST;
       }else {
-          printf("ELSEACTION %d\n",action);
-         printf("Adding vip %s for index %d\n",IP,iface->index);
+        // printf("ELSEACTION %d\n",action);
+        // printf("Adding vip %s for index %d\n",IP,iface->index);
          req.n.nlmsg_type = RTM_NEWADDR;
          req.n.nlmsg_flags = NLM_F_CREATE | NLM_F_EXCL | NLM_F_REQUEST;
        }
@@ -308,7 +308,7 @@ void  get_interface_index(struct my_interface *iface){
               iface->vip_status=1;
               break;
              }
-            printf("Interface: %s\nAddress: %s\n index %d\n", iface->name, iface->ipaddr, iface->index);
+           // printf("Interface: %s\nAddress: %s\n index %d\n", iface->name, iface->ipaddr, iface->index);
         }
       //if(interface_found==1)break;
     }
@@ -323,7 +323,7 @@ void interface_event_action(char * ipaddr, char * iname,int action){
     iface.name=iname;
     iface.ipaddr=ipaddr;
     get_interface_index(&iface);
-    printf("Interface: %s\tAddress: %s index %d\n", iface.name, iface.ipaddr, iface.index);
+    //printf("Interface: %s\tAddress: %s index %d\n", iface.name, iface.ipaddr, iface.index);
     struct rtnl_handle rth;
     netlink_open(&rth);
     add_IP_Address(ipaddr,&rth,&iface,action);

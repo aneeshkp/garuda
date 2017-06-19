@@ -47,7 +47,16 @@
 /* Typical include path would be <librdkafka/rdkafka.h>, but this program
  * is builtin from within the librdkafka source tree and thus differs. */
 #include "rdkafka.h"  /* for Kafka driver */
+#define ROW_START() do {} while (0)
+#define COL_HDR(NAME) printf("| %10.20s ", (NAME))
+#define COL_STR(NAME,VAL) printf("| %10.50s ", (VAL))
+#define COL_LONG(NAME,VAL) printf("| %10.13llu ", (VAL))
 
+
+#define ROW_END()          do {                 \
+                                printf("\n");   \
+                                rows_written++; \
+} while (0)
 
 static int run = 1;
 static rd_kafka_t *rk;
@@ -106,7 +115,30 @@ static void logger (const rd_kafka_t *rk, int level,
 		level, fac, rd_kafka_name(rk), buf);
 }
 
-
+static void print_status(Actiondata * actiondata){
+static int rows_written = 0;
+if(!rows_written){
+          /* First time, print header */
+          ROW_START();
+          COL_HDR("source");
+          COL_HDR("action");
+          COL_HDR("resource");
+          COL_HDR("status");
+          COL_HDR("source_time");
+          COL_HDR("dest_time");
+          COL_HDR("diff");
+          ROW_END();
+}
+ROW_START();
+COL_STR("source",actiondata->source);
+COL_STR("action",actiondata->action);
+COL_STR("resource",actiondata->resource_name);
+COL_STR("status",actiondata->resource_value);
+COL_LONG("total_time",actiondata->source_time);
+COL_LONG("dest_time",actiondata->dest_time);
+COL_LONG("diff",actiondata->dest_time-actiondata->source_time);
+ROW_END();
+} 
 
 /**
  * Handle and print a consumed message.
@@ -116,8 +148,13 @@ static void logger (const rd_kafka_t *rk, int level,
  */
 static void msg_consume (rd_kafka_message_t *rkmessage,
 			 void *opaque) {
+
+
+
+
 	if (rkmessage->err) {
 		if (rkmessage->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {
+                        return;
 			fprintf(stderr,
 				"%% Consumer reached end of %s [%"PRId32"] "
 			       "message queue at offset %"PRId64"\n",
@@ -164,38 +201,27 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
                   char *ret;
                   ret = strstr((char *)rkmessage->payload,"eno2");
                   if(ret){
-                  printf("%.*s\n",
-                       (int)rkmessage->len, (char *)rkmessage->payload);
                   char * message;
-
                   snprintf(message, (int)rkmessage->len,(char *)rkmessage->payload);
-                  printf("MESSAGE REC%s\n",message);
                   char *p=message;
                   p[(int)rkmessage->len-1]=0;
                   p++;
-                  printf("\nFINAL STRING%s\n" ,p);
                   Actiondata * actiondata=parseCollectdMessage(config,p);
-
                   if (actiondata!=NULL){
                     struct timeval tv;
                     gettimeofday(&tv, NULL);
                     unsigned long long millisecondsSinceEpoch =  (unsigned long long)(tv.tv_sec) * 1000 +  (unsigned long long)(tv.tv_usec) / 1000;
-                    printf("Current Time :%llu\n" , millisecondsSinceEpoch);
-                    char *ptr;
+                    //printf("Current Time :%llu\n" , millisecondsSinceEpoch);
+                    //char *ptr;
 //                   printf("Before clock %s\n" ,actiondata->clock);
-                    unsigned long long lclock=strtoull((char *)actiondata->clock,&ptr,10);
-                    printf("Event Occured time : %llu\n",lclock);
-                     printf("\nTotal time  : %llu\n",millisecondsSinceEpoch-lclock);
-
-  
-
-                   
-                                   printf("ACTION DATA->%s\n",actiondata->action);
+                    //unsigned long long lclock=strtoull((char *)actiondata->clock,&ptr,10);
+                    //printf("Event Occured time : %llu\n",lclock);
+                    // printf("\nTotal time  : %llu\n",millisecondsSinceEpoch-lclock);
+                       actiondata->dest_time=millisecondsSinceEpoch;
+                       print_status(actiondata);       
                                   if(!strcmp(actiondata->action, "add_vip")){
-                                       printf("adding vip");
                                        interface_event_action(actiondata->resource_value,actiondata->resource_name,1);
                                   }else{
-                                        printf("deleting VIP");
                                         interface_event_action(actiondata->resource_value,actiondata->resource_name,0);
                                   }
                   }

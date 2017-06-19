@@ -354,10 +354,10 @@ to_data(bool *seq_status, unsigned int *map_seq, Config *config,\
           parse_next(parser,event);
           config->entities[(*map_seq)-1].id=strdup((char *)event->data.scalar.value);
          /* printf("Printing Entity---- as collected \n");
-          printf("Entity[%d].category=%s  \n", (*map_seq)-1,config->entities[(*map_seq)-1].category);
-          printf("Entity[%d].type=%s  \n", (*map_seq)-1,config->entities[(*map_seq)-1].type);
-          printf("Entity[%d].name=%s  \n", (*map_seq)-1,config->entities[(*map_seq)-1].name);
-          printf("Entity[%d].id=%s  \n", (*map_seq)-1,config->entities[(*map_seq)-1].id);*/
+          //printf("Entity[%d].category=%s  \n", (*map_seq)-1,config->entities[(*map_seq)-1].category);
+          //printf("Entity[%d].type=%s  \n", (*map_seq)-1,config->entities[(*map_seq)-1].type);
+          //printf("Entity[%d].name=%s  \n", (*map_seq)-1,config->entities[(*map_seq)-1].name);
+          //printf("Entity[%d].id=%s  \n", (*map_seq)-1,config->entities[(*map_seq)-1].id);*/
 
 
 

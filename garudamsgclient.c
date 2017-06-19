@@ -11,7 +11,7 @@ typedef struct{
 	char *entity;
 	char *source;
         char *dest;
-        char *clock;
+        unsigned long long clock;
 }GarudaMessage;
 
 
@@ -19,7 +19,9 @@ typedef struct{
 	char *action;
 	char *resource_name;
 	char *resource_value;
-        char *clock;
+        char *source;
+        unsigned long long source_time;
+        unsigned long long dest_time;
 }Actiondata;
 
 // methods
@@ -37,9 +39,9 @@ Actiondata *  parseCollectdMessage(Config * config,char * jsonMessage);
 
 
 	Actiondata * actiondata=parseCollectdMessage(config,message);
-	printf("ACTION%s\n",actiondata->action);
-    printf("RESOURCE_NAME%s\n",actiondata->resource_name);
-	printf("RESOURCE_VALUE%s\n",actiondata->resource_value);
+         //printf("ACTION%s\n",actiondata->action);
+         //printf("RESOURCE_NAME%s\n",actiondata->resource_name);
+	//printf("RESOURCE_VALUE%s\n",actiondata->resource_value);
 
 
 	free(config);
@@ -60,7 +62,7 @@ Actiondata *  parseCollectdMessage(Config * config,char * jsonMessage){
 	char errbuf[1024];
 
 	yajl_val node;
-        printf("\nJSON MESSAGE%s\n",jsonMessage);
+        //printf("\nJSON MESSAGE%s\n",jsonMessage);
 	/* we have the whole config file in memory.  let's parse it ... */
 
 
@@ -79,17 +81,19 @@ Actiondata *  parseCollectdMessage(Config * config,char * jsonMessage){
              const char * path4[] = { "meta", "dest" ,(const char *) 0 };
              message->dest= YAJL_GET_STRING(yajl_tree_get(node, path4, yajl_t_string));
              const char * path5[] = { "meta", "clock" ,(const char *) 0 };
-             message->clock=YAJL_GET_STRING(yajl_tree_get(node, path5, yajl_t_string));
+             char *clock=YAJL_GET_STRING(yajl_tree_get(node, path5, yajl_t_string));
+             char *ptr;
+             message->clock=strtoull(clock,&ptr,10);
 	}else{
 			printf("Message node is null");
 			return 0;
 
 		}
-        printf("Message:Condition%s\n",message->condition);
+       /* printf("Message:Condition%s\n",message->condition);
 	printf("Message:Entity%s\n",message->entity);
 	printf("Message:Source%s\n",message->source);
        printf("Message:dest%s\n",message->dest);
-          printf("Message:dest%s\n",message->clock);
+          printf("Message:dest%s\n",message->clock);*/
 
 
 
@@ -101,16 +105,11 @@ Actiondata *  parseCollectdMessage(Config * config,char * jsonMessage){
         hostname[1023] = '\0';
         gethostname(hostname, 1023);
         const char * returnValue;
-        printf("HOSTNAME%s\n",hostname);
         
         if(!strcmp(hostname,message->source)){
-                printf("SAME HOSTNAE");  
                 returnValue =getJsonString((char *)message->condition,config);
-                printf("%s/n",returnValue);
         }else{  
-                  returnValue =getJsonString((char *)message->dest,config);
-                  printf("DIFFERENT");
-                  printf("%s\n",returnValue);
+                 returnValue =getJsonString((char *)message->dest,config);
 
          }
 
@@ -123,7 +122,9 @@ Actiondata *  parseCollectdMessage(Config * config,char * jsonMessage){
 	node = yajl_tree_parse((const char *) returnValue, errbuf, sizeof(errbuf));
 	Actiondata *actiondata;
 	actiondata=(Actiondata *)malloc(sizeof(Actiondata));
-	actiondata->clock=strdup(message->clock);
+	actiondata->source_time=message->clock;
+        actiondata->source=strdup(message->source);
+
 
 	if(node!=NULL){
                                     
