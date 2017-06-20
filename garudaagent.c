@@ -203,12 +203,6 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 		return;
 	}
 
-	//      if (!quiet)
-        /*      fprintf(stdout, "%% Message (topic %s [%"PRId32"], "
-                        "offset %"PRId64", %zd bytes):\n",
-                        rd_kafka_topic_name(rkmessage->rkt),
-                        rkmessage->partition,
-                        rkmessage->offset, rkmessage->len);*/
 
         if (rkmessage->key_len) {
                   char *ret;
