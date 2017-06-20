@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <yajl/yajl_tree.h>
@@ -11,7 +12,8 @@ typedef struct{
 	char *entity;
 	char *source;
         char *dest;
-        unsigned long long clock;
+        uint32_t sec;
+        uint32_t usec;
 }GarudaMessage;
 
 
@@ -20,8 +22,8 @@ typedef struct{
 	char *resource_name;
 	char *resource_value;
         char *source;
-        unsigned long long source_time;
-        unsigned long long dest_time;
+        struct timeval *source_time;
+        struct timeval *dest_time;
 }Actiondata;
 
 // methods
@@ -60,18 +62,13 @@ Parses CollectMessage and return struct to read action
 
 Actiondata *  parseCollectdMessage(Config * config,char * jsonMessage){
 	char errbuf[1024];
-
 	yajl_val node;
-        //printf("\nJSON MESSAGE%s\n",jsonMessage);
+       printf("\nJSON MESSAGE%s\n",jsonMessage);
 	/* we have the whole config file in memory.  let's parse it ... */
-
-
-
 	node = yajl_tree_parse((const char *) jsonMessage, errbuf, sizeof(errbuf));
-
 	GarudaMessage *message;
-	message=(GarudaMessage *)malloc(sizeof(GarudaMessage));
 	if (node != NULL) {
+            message=(GarudaMessage *)malloc(sizeof(GarudaMessage));
 	    const char * path1[] = { "meta", "condition" ,(const char *) 0 };
 	     message->condition=YAJL_GET_STRING(yajl_tree_get(node, path1, yajl_t_string));
 	     const char * path2[] = { "meta", "entity" ,(const char *) 0 };
@@ -80,10 +77,14 @@ Actiondata *  parseCollectdMessage(Config * config,char * jsonMessage){
 	     message->source= YAJL_GET_STRING(yajl_tree_get(node, path3, yajl_t_string));
              const char * path4[] = { "meta", "dest" ,(const char *) 0 };
              message->dest= YAJL_GET_STRING(yajl_tree_get(node, path4, yajl_t_string));
-             const char * path5[] = { "meta", "clock" ,(const char *) 0 };
-             char *clock=YAJL_GET_STRING(yajl_tree_get(node, path5, yajl_t_string));
-             char *ptr;
-             message->clock=strtoull(clock,&ptr,10);
+             const char * path5[] = { "meta", "sec" ,(const char *) 0 };
+             char *sec=YAJL_GET_STRING(yajl_tree_get(node, path5, yajl_t_string));
+             const char * path6[] = { "meta", "usec" ,(const char *) 0 };
+             char *usec=YAJL_GET_STRING(yajl_tree_get(node, path6, yajl_t_string));
+             //char *ptr;
+             message->sec  = strtoul (sec, NULL, 0);
+             message->usec=strtoul(usec,NULL,0);
+               
 	}else{
 			printf("Message node is null");
 			return 0;
@@ -121,9 +122,18 @@ Actiondata *  parseCollectdMessage(Config * config,char * jsonMessage){
 	//printf("hostname:%s\n",hostname);
 	node = yajl_tree_parse((const char *) returnValue, errbuf, sizeof(errbuf));
 	Actiondata *actiondata;
-	actiondata=(Actiondata *)malloc(sizeof(Actiondata));
-	actiondata->source_time=message->clock;
+  	actiondata=(Actiondata *)malloc(sizeof(Actiondata));
+        //struct timeval sourcetime;
+        //sourcetime=(timeval *)malloc(sizeof(timeval));
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        actiondata->source_time=(struct timeval * )malloc(sizeof(struct timeval));
+        actiondata->source_time->tv_sec=message->sec;
+        actiondata->source_time->tv_usec=message->usec;
         actiondata->source=strdup(message->source);
+        actiondata->dest_time=(struct timeval* )malloc(sizeof(struct timeval));
+        actiondata->dest_time->tv_sec=tv.tv_sec;
+        actiondata->dest_time->tv_usec=tv.tv_usec;
 
 
 	if(node!=NULL){

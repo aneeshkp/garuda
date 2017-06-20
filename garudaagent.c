@@ -41,17 +41,17 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <getopt.h>
-#include <time.h>
 #include "netlink-ip.c"
 #include "garudamsgclient.c"
 /* Typical include path would be <librdkafka/rdkafka.h>, but this program
  * is builtin from within the librdkafka source tree and thus differs. */
 #include "rdkafka.h"  /* for Kafka driver */
 #define ROW_START() do {} while (0)
-#define COL_HDR(NAME) printf("| %10.20s ", (NAME))
+#define COL_HDR1(NAME) printf("| %10.50s ", (NAME))
+#define COL_HDR2(NAME) printf("| %10.20s ", (NAME))
 #define COL_STR(NAME,VAL) printf("| %10.50s ", (VAL))
-#define COL_LONG(NAME,VAL) printf("| %10.13llu ", (VAL))
-
+#define COL_LONG(NAME,VAL) printf("| %13llu ", (VAL))
+#define COL_FLOAT(NAME,VAL) printf("| %13f ", (VAL))
 
 #define ROW_END()          do {                 \
                                 printf("\n");   \
@@ -115,29 +115,45 @@ static void logger (const rd_kafka_t *rk, int level,
 		level, fac, rd_kafka_name(rk), buf);
 }
 
-static void print_status(Actiondata * actiondata){
-static int rows_written = 0;
-if(!rows_written){
-          /* First time, print header */
-          ROW_START();
-          COL_HDR("source");
-          COL_HDR("action");
-          COL_HDR("resource");
-          COL_HDR("status");
-          COL_HDR("source_time");
-          COL_HDR("dest_time");
-          COL_HDR("diff");
-          ROW_END();
+static float timedifference_msec(struct timeval * t0, struct timeval * t1)
+{
+    /*printf("\nsource-sec: llu\n",t0->tv_sec);
+    printf("source-usec: %llu\n",t0->tv_usec);
+    printf("des-sec:%llu\n",t1->tv_sec);
+    printf("dest-usec:%llu\n",t1->tv_usec);*/
+    return (t1->tv_sec - t0->tv_sec) * 1000.0f + (t1->tv_usec - t0->tv_usec) / 1000.0f;
 }
-ROW_START();
-COL_STR("source",actiondata->source);
-COL_STR("action",actiondata->action);
-COL_STR("resource",actiondata->resource_name);
-COL_STR("status",actiondata->resource_value);
-COL_LONG("total_time",actiondata->source_time);
-COL_LONG("dest_time",actiondata->dest_time);
-COL_LONG("diff",actiondata->dest_time-actiondata->source_time);
-ROW_END();
+
+static void print_status(Actiondata * actiondata){
+	static int rows_written = 0;
+	if(!rows_written){
+        	  /* First time, print header */
+	          ROW_START();
+        	  COL_HDR1("source");
+	          COL_HDR2("action");
+        	  COL_HDR2("resource");
+	          COL_HDR2("status");
+	          //COL_HDR2("source_time");
+        	  //COL_HDR2("dest_time");
+        	  COL_HDR2("Latency");
+	          ROW_END();
+	}
+	ROW_START();
+                //time_t mytime;
+                //time(&mytime);
+                //char * timestring=(char *)ctime(&mytime); 
+                //COL_STR("time",timestring);
+		COL_STR("source",actiondata->source);
+		COL_STR("action",actiondata->action);
+		COL_STR("resource",actiondata->resource_name);
+		COL_STR("status",actiondata->resource_value);
+		//COL_LONG("source_time", (unsigned long long)(actiondata->source_time->tv_sec) * 1000 +  (unsigned long long)(actiondata->source_time->tv_usec) / 1000);
+		//COL_LONG("dest_time", (unsigned long long)(actiondata->dest_time->tv_sec) * 1000 +  (unsigned long long)(actiondata->dest_time->tv_usec) / 1000);
+		//COL_LONG("dest_time",actiondata->dest_time);
+		//long long elapsed = (actiondata->dest_time->tv_sec-actiondata->source_time->tv_sec)*1000000LL + (actiondata->dest_time->tv_usec-actiondata->source_time->tv_usec)/1000;
+		float diff=timedifference_msec(actiondata->source_time,actiondata->dest_time);
+		COL_FLOAT("diff",diff);
+	ROW_END();
 } 
 
 /**
@@ -149,17 +165,14 @@ ROW_END();
 static void msg_consume (rd_kafka_message_t *rkmessage,
 			 void *opaque) {
 
-
-
-
 	if (rkmessage->err) {
 		if (rkmessage->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {
                         return;
-			fprintf(stderr,
+			/*fprintf(stderr,
 				"%% Consumer reached end of %s [%"PRId32"] "
 			       "message queue at offset %"PRId64"\n",
 			       rd_kafka_topic_name(rkmessage->rkt),
-			       rkmessage->partition, rkmessage->offset);
+			       rkmessage->partition, rkmessage->offset);*/
 
 			if (exit_eof && --wait_eof == 0) {
                                 fprintf(stderr,
@@ -201,51 +214,37 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
                   char *ret;
                   ret = strstr((char *)rkmessage->payload,"eno2");
                   if(ret){
-                  char * message;
-                  snprintf(message, (int)rkmessage->len,(char *)rkmessage->payload);
-                  char *p=message;
-                  p[(int)rkmessage->len-1]=0;
-                  p++;
-                  Actiondata * actiondata=parseCollectdMessage(config,p);
-                  if (actiondata!=NULL){
-                    struct timeval tv;
-                    gettimeofday(&tv, NULL);
-                    unsigned long long millisecondsSinceEpoch =  (unsigned long long)(tv.tv_sec) * 1000 +  (unsigned long long)(tv.tv_usec) / 1000;
-                    //printf("Current Time :%llu\n" , millisecondsSinceEpoch);
-                    //char *ptr;
-//                   printf("Before clock %s\n" ,actiondata->clock);
-                    //unsigned long long lclock=strtoull((char *)actiondata->clock,&ptr,10);
-                    //printf("Event Occured time : %llu\n",lclock);
-                    // printf("\nTotal time  : %llu\n",millisecondsSinceEpoch-lclock);
-                       actiondata->dest_time=millisecondsSinceEpoch;
-                       print_status(actiondata);       
+	                  char * message;
+        	          snprintf(message, (int)rkmessage->len,(char *)rkmessage->payload);
+                	 // char *p=message;
+	                  message[(int)rkmessage->len-1]=0;
+        	          message++;
+	                  Actiondata * actiondata=parseCollectdMessage(config,message);
+        	          if (actiondata!=NULL){
+                	    struct timeval tv;
+	                    gettimeofday(&tv, NULL);
+        	            unsigned long long millisecondsSinceEpoch =  (unsigned long long)(tv.tv_sec) * 1000 +  (unsigned long long)(tv.tv_usec) / 1000;
+                	    //printf("Current Time :%llu\n" , millisecondsSinceEpoch);
+	                    //char *ptr;
+	                  // printf("Before clock %s\n" ,actiondata->clock);
+	                    //unsigned long long lclock=strtoull((char *)actiondata->clock,&ptr,10);
+	                    //printf("Event Occured time : %llu\n",lclock);
+        	            // printf("\nTotal time  : %llu\n",millisecondsSinceEpoch-lclock);
+                	       //actiondata->dest_time=millisecondsSinceEpoch;
+	                       print_status(actiondata);       
                                   if(!strcmp(actiondata->action, "add_vip")){
                                        interface_event_action(actiondata->resource_value,actiondata->resource_name,1);
                                   }else{
                                         interface_event_action(actiondata->resource_value,actiondata->resource_name,0);
                                   }
+	                     free(actiondata->source_time);
+        	             free(actiondata->dest_time);
+		             free(actiondata);
+
+        	          }
                   }
-                   free(actiondata);
-                  }
-
-                 // ret = strstr((char *)rkmessage->payload,"192.168.1.100");
-                  //if(ret) interface_event_action("192.168.1.100","eno2");
-
-                if (output == OUTPUT_HEXDUMP)
-                        hexdump(stdout, "Message Key",
-                                rkmessage->key, rkmessage->key_len);
-                //else
-                //      printf("Key: %.*s\n",
-                //             (int)rkmessage->key_len, (char *)rkmessage->key);
-
         }
 
-	if (output == OUTPUT_HEXDUMP)
-		hexdump(stdout, "Message Payload",
-			rkmessage->payload, rkmessage->len);
-//	else
-//		printf("%.*s\n",
-//		       (int)rkmessage->len, (char *)rkmessage->payload);
 }
 
 
@@ -347,6 +346,7 @@ static int describe_groups (rd_kafka_t *rk, const char *group) {
 
 static void sig_usr1 (int sig) {
 	rd_kafka_dump(stdout, rk);
+        free(config);
 }
 
 int main (int argc, char **argv) {
@@ -685,7 +685,8 @@ done:
                         rd_kafka_err2str(err));
         else
                 fprintf(stderr, "%% Consumer closed\n");
-
+        if(config!=NULL) free(config);
+        
         rd_kafka_topic_partition_list_destroy(topics);
 
         /* Destroy handle */
